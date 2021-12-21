@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="productbuy.mapper">
+<delete id="option_delete">
+	delete product_info where p_num = #{p_num}
+</delete>
+
+<update id="option_update">
+	update product_info set color = #{color}, p_size = #{p_size}, quota = quota + #{add_count}, remaining = remaining + #{add_count}
+	where p_info_no = #{p_info_no}
+</update>
+
+<insert id="option_insert">
+	insert into product_info (color, p_size, quota, remaining, p_num, p_info_no) 
+		values (#{color}, #{p_size}, #{quota}, #{quota}, #{p_num}, seq_product_info.nextval )
+</insert>
+
+<select id="option_list" resultType="product.ProductInfoVO">
+	select * from product_info where p_num = #{p_num}
+</select>
+
+<sql id="update_where">
+	<if test = "m_id != null">
+		and m_id = #{m_id}	
+	</if>
+	<if test = "clientip != null">
+		and clientip = #{clientip}
+	</if>
+	
+</sql>
+
+	<select id="p_no_info_find" resultType="integer">
+		select p_info_no from product_info where p_num = #{p_num} and color = #{color} and p_size = #{p_size}
+	</select>
+	
+	<update id="basketupdate">
+	update basket set product_count = product_count +1 
+	where p_info_no = #{p_info_no} <include refid="update_where"/>
+	</update>
+	
+	<select id="basketdetail" resultType="integer">
+		select count(*) from basket where p_info_no = #{p_info_no} <include refid="update_where"/>
+	</select>
+	
+	<delete id="deleteip">
+		delete from basket where clientip = #{clientip} and p_info_no = #{p_info_no}
+	</delete>
+
+	<delete id="deleteid">
+		delete from basket where m_id = #{m_id} and p_info_no = #{p_info_no}
+	</delete>
+	
+	<insert id="basketinsert">
+		insert into basket (m_id, p_num, clientip, p_info_no) 
+		values (#{m_id}, #{p_num}, #{clientip}, #{p_info_no} )
+	</insert>
+	
+	<select id="basketlistid" resultType="productbuy.ProductBasketVO">
+	select f.p_size, f.color, b.p_num, p.p_name, p.price, p.FILENAME, b.product_count, b.p_info_no
+		from basket b, product p, product_info f
+		where b.m_id = #{m_id}
+		and b.p_num = p.p_num
+        and b.p_info_no = f.p_info_no
+	</select>
+	
+	<select id="basketlistip" resultType="productbuy.ProductBasketVO">
+		select f.p_size, f.color, b.p_num, p.p_name, p.price, p.FILENAME, b.product_count, b.p_info_no
+		from basket b, product p, product_info f
+		where b.clientip = #{clientip}
+		and b.p_num = p.p_num
+        and b.p_info_no = f.p_info_no
+	</select>
+
+</mapper>

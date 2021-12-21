@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="member.mapper">
+<sql id="search_where">
+	<if test="search == 'm_name' or search == 'm_id' or search == 'm_email' or search == 'm_addr' or search == 'm_tel'">
+		where ${search } like '%' || #{keyword } || '%'
+	</if>
+	<if test="search == 'all'">
+		where m_name like '%' || #{keyword} || '%'
+	or m_id like '%' || #{keyword} || '%'
+	or m_email like '%' || #{keyword} || '%'
+	or m_addr like '%' || #{keyword} || '%'
+	or m_tel like '%' || #{keyword} || '%'
+	</if>
+</sql>
+
+<select id="detail" resultType="member.MemberVO">
+ select * from member where m_email = #{m_email}
+</select>
+
+<delete id="delete">
+	delete member where m_email = #{m_email}
+</delete>
+<select id="list" resultType="member.MemberVO">
+	select * from member <include refid="search_where"/>
+</select>
+
+<update id="update_pw">
+	update member set m_pw = #{m_pw} where m_email = #{m_email}
+</update>
+
+<select id="issue_pw" resultType="integer">
+	select count(*) from member where m_email = #{m_email} and m_id = #{m_id}
+</select>
+
+<select id="find_id" resultType="string">
+	select m_id from member where m_email = #{m_email}
+</select>
+
+<update id="update">
+	update member set m_id = #{m_id}, m_pw = #{m_pw}, post = #{post},
+	m_addr = #{m_addr}, m_tel = #{m_tel}, m_name = #{m_name} 
+	where m_email = #{m_email}
+</update>
+
+<select id='login' resultType="member.MemberVO">
+	select * from member where m_id = #{m_id} and m_pw = #{m_pw}
+</select>
+
+<insert id="join">
+	insert into member(m_id, m_name, m_pw, m_gender, m_tel, m_email, m_addr, post )
+	values (#{m_id}, #{m_name}, #{m_pw}, #{m_gender}, #{m_tel}, #{m_email}, #{m_addr}, #{post})
+</insert>
+
+<select id="email_check" resultType="integer">
+	select count(*) from member where m_email = #{email}
+</select>
+
+<select id="id_check" resultType="integer">
+	select count(*) from member where m_id = #{id}
+</select>
+
+<insert id="codeinsert">
+	insert into codecheck(m_email, code) values(#{m_email}, #{code})
+</insert>
+
+<select id="emailcodchk" resultType="integer">
+	select count(*) from codecheck where m_email = #{m_email} and code = #{code}
+</select>
+</mapper>

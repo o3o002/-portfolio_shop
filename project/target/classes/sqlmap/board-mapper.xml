@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="board.mapper">
+<select id="detaillist" resultType="board.BoardVO">
+	select  * from board where m_id = #{m_id}
+</select>
+
+<insert id="reply_insert">
+	<![CDATA[
+		{CALL DECLARE BEGIN 
+			update board set step = step + 1
+			where root = #{root } and step > #{step };
+			
+			insert into board(b_id, root, title, content, m_name, step, indent, category, m_id, board_pw)
+			values(seq_board.nextval, #{root}, #{title}, #{content}, #{m_name}, #{step} + 1, #{indent} + 1, #{category}, #{m_id}, #{board_pw});
+			end}
+	]]>
+</insert>
+
+<update id="update">
+	update board set title = #{title}, content = #{content}, category = #{category},
+		filename = #{filename, jdbcType=VARCHAR}, filepath = #{filepath, jdbcType=VARCHAR}, board_pw = #{board_pw} 
+		where b_id = #{b_id}
+</update>
+<select id="detail" resultType="board.BoardVO">
+	select * from board where b_id = #{id}
+</select>
+
+<sql id="search_where">
+	<if test= "search == 'title' or search == 'content' ">
+		where ${search } like '%' || #{keyword } || '%'
+	</if>
+	<if test="search == 'm_name'">
+		where <include refid="search_writer"/>
+	</if>
+	<if test="search == 'all'">
+		where title like '%' || #{keyword } || '%'
+		or content like '%' || #{keyword } || '%'
+		or <include refid="search_writer"/>
+	</if>
+</sql>
+
+<sql id="search_writer">
+	m_name in (select m_name from member where m_name like '%' || #{keyword} || '%')
+</sql>
+
+<select id="boardlist" resultType="board.BoardVO">
+	select *
+	from ( select rownum no, n.* 
+        from ( select *
+                 from board <include refid="search_where"/> order by root ) n order by no desc
+    ) where no BETWEEN #{beginList} and #{endList} 	
+</select>
+
+<insert id="insert">
+	insert into board (title, content, category, filename, filepath, m_name, m_id, board_pw, b_id, root)
+	values (#{title}, #{content}, #{category}, #{filename, jdbcType=VARCHAR}, #{filepath, jdbcType=VARCHAR},
+		#{m_name}, #{m_id}, #{board_pw}, seq_board.nextval, seq_board.currval )
+</insert>
+
+<select id="totalList" resultType="integer">
+	select count(*) from board
+</select>
+
+
+
+</mapper>

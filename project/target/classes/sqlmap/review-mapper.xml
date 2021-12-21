@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="review.mapper" > 
+	<select id="mylist" resultType="review.ReviewVO">
+			select m.m_name, p.P_NAME,r.p_num, r.review_num, r.grade, r.content, r.writedate, r.filepath 
+			from review r, product p, member m
+			where r.M_ID = #{m_id} and
+						p.P_num = r.P_num and 
+						r.m_id = m.m_id
+	</select>
+	<select id="reviewlist" resultType="review.ReviewVO">
+		select r.*, m.m_name from review r, member m where m.m_id = r.m_id
+	</select>
+	
+	<select id="totalList" resultType="integer">
+		select count(*) from review 
+	</select>
+	
+	<insert id="insert">
+		insert into review (review_num, grade, p_num, m_id, content, filepath, root) 
+		values (seq_review.nextval, #{grade}, #{p_num}, #{m_id}, #{content}, #{filepath, jdbcType=VARCHAR}, seq_review.currval )
+	</insert>
+	
+	<insert id="reply_insert">
+			<![CDATA[
+		{CALL DECLARE BEGIN 
+			update review set step = step + 1
+			where root = #{root } and step > #{step };
+			
+			insert into review(review_num, root, content, m_id, step)
+			values(seq_review.nextval, #{root}, #{content}, #{m_id}, #{step} + 1);
+			end}
+	]]>
+	</insert>
+
+</mapper>

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="order.mapper" > 
+
+<select id="grap_list_deliver" resultType="order.DeliverVO">
+	select deliver_content, count(deliver_content) as count
+		from (
+			SELECT * 
+			FROM deliver
+			WHERE to_char(order_sysdate, 'YYYYMMDD') = TO_CHAR(SYSDATE,'YYYYMMDD') )
+	group by deliver_content
+</select>
+<select id="grap_list" resultType="order.OrderdetailVO">
+	select to_char(order_date, 'yyyymmdd') as order_date, order_status, count(order_status) as count
+		from (
+			SELECT * 
+			FROM order_status
+			WHERE to_char(order_date, 'YYYYMMDD') = TO_CHAR(SYSDATE,'YYYYMMDD') )
+	group by to_char(order_date, 'yyyymmdd'), order_status
+</select>
+
+<sql id="deliver_where_search">
+	<if test="search == 'all' ">
+	where order_num like '%' || #{keyword} || '%'
+	and m_id like '%' || #{keyword} || '%'
+	and deliver_content like '%' || #{keyword} || '%'
+	and tracking_num like '%' || #{keyword} || '%' 
+	</if>
+	<if test="search == 'order_num' || search == 'm_id' || search == 'deliver_content' || search == 'tracking_num'">
+		where ${search} like '%' || #{keyword} || '%'
+	</if>
+</sql>
+
+	<select id="deliver_list" resultType="order.DeliverVO">
+		select *
+		from ( select rownum no, n.* 
+        from ( select *
+                from deliver <include refid="deliver_where_search"/> order by order_sysdate ) n order by no desc
+    ) where no BETWEEN #{beginList} and #{endList} 	
+	</select>
+
+	<select id="totalList" resultType="integer">
+	select count(*) from deliver
+	</select>
+
+	<sql id="search_where">
+		<if test="search == 'order_num' or search == 'm_id' or search == 'paymethod' or search == 'order_status' ">
+			where ${search} like '%' || #{keyword} || '%'
+		</if>
+		<if test="search == 'all' ">
+			where order_num like '%' || #{keyword} || '%'
+			or m_id like '%' || #{keyword} || '%'
+			or paymethod like '%' || #{keyword} || '%'
+			or order_status like '%' || #{keyword} || '%'
+		</if>
+	</sql>
+	<update id="status_update">
+		update order_status set order_status = #{order_status} where order_num = #{order_num}
+	</update>
+
+	<select id="all_list" resultType="order.OrderdetailVO">
+		select * from order_status <include refid="search_where"/>
+	</select>
+
+	<select id="order_my_list" resultType="order.OrderdetailVO">
+		select * from order_status where m_id = #{m_id}
+		
+	</select>
+	<update id="cancel_order_status">
+		update order_status set order_status = '주문취소' where order_num = #{order_num}
+	</update>
+
+	<delete id="delete_p_order">
+		delete from p_order where order_num = #{order_num}
+	</delete>
+	
+	<delete id="delete_deliver">
+		delete from deliver where order_num = #{order_num}
+	</delete>
+
+
+	<select id="list_product" resultType="productbuy.ProductBasketVO">
+	select p.p_num, p.price, p.p_name, i.color, i.p_size, o.count product_count
+		from product p, product_info i, p_order o
+		where o.order_num = #{order_num}
+		and o.p_info_no = i.p_info_no
+		and i.p_num = p.p_num
+	</select>
+	
+	<select id="detail_order" resultType="order.OrderdetailVO">
+		select * from order_status where order_num = #{order_num}
+	</select>
+
+	<select id="detail_addr" resultType="order.DeliverVO">
+		select * from deliver where order_num = #{order_num}
+	</select>
+
+	<select id="nomember_order_chk" resultType="integer">
+		select count(*) from order_status where order_num = #{order_num} and pw = #{pw}
+	</select>
+	
+	<select id="order_num_chk" resultType="integer">
+		select count(*) from order_status where order_num = #{order_num}
+	</select>
+	
+	<insert id="insert_p_order">
+		insert into p_order (p_info_no, count, order_num)
+		values (#{p_info_no}, #{count}, #{order_num} )
+	</insert>
+	
+	<insert id="insert_order">
+		insert into order_status (m_id, totalprice, paymethod, order_num, pw) 
+		values (#{m_id}, #{totalprice}, #{paymethod}, #{order_num}, #{pw, jdbcType=VARCHAR} )	
+	</insert>
+	
+	<insert id="insert_deliver">
+		insert into deliver (sender, s_post, s_addr, s_addr2,
+		s_phone, s_phone2, recipient, r_post, r_addr, 
+		r_addr2, r_phone, r_phone2, deliver_content, m_id, order_num)
+		values (#{sender}, #{s_post}, #{s_addr}, #{s_addr2}, 
+		#{s_phone}, #{s_phone2}, #{recipient}, #{r_post}, #{r_addr},
+		#{r_addr2}, #{r_phone}, #{r_phone2}, #{deliver_content}, #{m_id}, #{order_num} )
+	</insert>
+
+</mapper>

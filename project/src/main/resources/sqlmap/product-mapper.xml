@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="prodcut.mapper">
+	<select id="new_products" resultType="product.ProductVO">
+		<![CDATA[ 
+		select rownum, n.* 
+				from (
+        select * 
+        from product 
+        order by p_update desc) n
+		where rownum < 21
+	
+		
+		]]>
+	</select>
+	<select id="row_product" resultType="product.ProductVO">
+	<![CDATA[ 
+		select rownum, n.* 
+				from (
+        select * 
+        from product 
+        order by readcnt desc) n
+		where rownum < 11
+	
+		
+		]]>
+	</select>
+
+	<select id="p_info_no_search" resultType="string">
+	select * from product_info where p_num = #{p_num} and color = #{color} and p_size = #{p_size}
+	</select>
+	<update id="readcnt_update">
+		update product set readcnt = readcnt + 1 where p_num = #{id}
+	</update>
+
+	<delete id="delete">
+		delete product where p_num = #{p_num}
+	</delete>
+
+	<update id="update">
+		update product set p_name = #{p_name}, price = #{price}, itemType1 = #{itemType1}, itemType2 = #{itemType2},
+		summary = #{summary}, content = #{content}, filename = #{filename, jdbcType=VARCHAR}, filepath = #{filepath, jdbcType=VARCHAR} where p_num = #{p_num}
+	</update>
+
+	<sql id="search_where">
+		<if test= "search == 'p_name'">
+		where ${search } like '%' || #{keyword } || '%'
+	</if>
+	</sql>
+	<select id="all_totalList" resultType="integer">
+		select count(*) from product
+	</select>
+	
+	<select id="all_list" resultType="product.ProductVO">
+		select * 
+		from(select rownum no, n.* 
+			from  (select * 
+					from PRODUCT <include refid="search_where"/> ) n )
+		where no between #{beginList} and #{endList} order by no desc			
+	</select>
+
+
+	<insert id="insert_info">
+		<![CDATA[
+		{CALL DECLARE BEGIN 
+			update product set quota = quota + #{remaining}, remaining = remaining + #{remaining}
+			where p_num = #{p_num};
+			
+			insert into product_info (p_info_no, p_num, p_size, color, quota, remaining ) 
+			values(SEQ_PRODUCT_INFO.nextval, #{p_num}, #{p_size}, #{color}, #{remaining}, #{remaining} );
+			end}
+	]]>
+	
+	</insert>
+	<select id="p_num" resultType="String">
+		select p_num from product where p_name = #{p_name}
+	</select>
+	<insert id="insert_product">
+		insert into product (p_name, price, filename, filepath, itemType1, itemType2, summary, content) 
+		values (#{p_name}, #{price}, #{filename, jdbcType=VARCHAR}, #{filepath, jdbcType=VARCHAR},#{itemType1}, #{itemType2}, #{summary}, #{content} )
+	</insert>
+
+	<select id="load_itemType2" resultType="string">
+		select itemType2 from category where itemType1 = #{itemType1}
+	</select>
+
+	<select id="productSize" resultType="product.ProductInfoVO">
+			select * from PRODUCT_INFO where p_num = #{p_num} and color = #{color}
+	</select>
+
+	<select id="productColor" parameterType="integer" resultType="string">
+		select distinct(color) from PRODUCT_INFO where p_num = #{id }
+	</select>
+
+	<select id="itemTypeCategory" resultType="product.ProductVO">
+		select distinct(itemType2), itemType1 from product where itemType1 = #{itemType1 }
+	</select>
+
+	<sql id="product_sort">
+		<if test='sort == "hightprice"'>
+			order by price 
+		</if>
+		<if test='sort == "lowprice"'>
+			order by price desc
+		</if>	
+		<if test='sort == "update"'>
+			order by p_update
+		</if>
+	</sql>
+	
+	<select id="sublist" resultType="product.ProductVO">
+		select * 
+		from(select rownum no, n.* 
+			from  (select * 
+					from PRODUCT where itemType1 = #{itemType1 } 
+								and itemType2 = #{itemType2 } <include refid="product_sort"/> ) n )
+		where no between #{beginList} and #{endList} order by no desc
+		
+	</select>
+	
+	<select id="list" resultType="product.ProductVO">
+		select * 
+		from(select rownum no, n.* 
+			from  (select * 
+					from PRODUCT where itemType1 = #{itemType1 } <include refid="product_sort"/> ) n  ) 
+					where no between #{beginList} and #{endList}
+		order by no desc				
+	</select>
+	
+	<select id="detail" resultType="product.ProductVO">
+		select * from product where p_num = #{id}
+	</select>
+	
+	<select id="categoryTotalList" resultType="integer">
+		select count(*) from product where itemType1 = #{itemType1} and itemType2 = #{itemType2 }
+	</select>
+	
+	<select id="totalList" resultType="integer">
+		select count(*) from product where itemType1 = #{itemType1}
+	</select>
+</mapper>
